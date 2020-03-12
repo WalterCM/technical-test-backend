@@ -2,7 +2,7 @@ from src import models
 from src.tests.base import TestCase
 
 
-class ModelTests(TestCase):
+class UserTests(TestCase):
     MODELS = [models.User]
     payload = {
         'username': 'test_user',
@@ -39,3 +39,47 @@ class ModelTests(TestCase):
 
         with self.assertRaises(ValueError):
             models.User.objects.create_user(**payload)
+
+
+class NoteTests(TestCase):
+    MODELS = [models.User, models.Note]
+    payload = {
+        'title': 'Cosas que me gustan',
+        'body': 'Musica\nProgramacion\nFilosofia'
+    }
+
+    def setUp(self):
+        super().setUp()
+        self.user = models.User.objects.create_user(
+            username='waltercm',
+            password='123456'
+        )
+
+    def test_create_new__empty_note(self):
+        """Testea que un usuario pueda crear una nueva nota"""
+        self.user.create_new_note()
+
+    def tesT_edit_note_title(self):
+        """Testea que se pueda editar el titulo de una nota"""
+        note = self.user.create_new_note()
+        self.assertEqual(note.title, '')
+
+        note.set_title(self.payload.get('title'))
+        self.assertEqual(note.title, self.payload.get('title'))
+
+    def test_edit_note_body(self):
+        """Testea que se pueda editar el cuerpo de una nota"""
+        note = self.user.create_new_note()
+        self.assertEqual(note.body, '')
+
+        note.set_body(self.payload.get('body'))
+        self.assertEqual(note.body, self.payload.get('body'))
+
+    def test_delete_note(self):
+        note = self.user.create_new_note()
+        notes = models.Note.select()
+        self.assertGreater(len(notes), 0)
+
+        note.delete_instance()
+        notes = models.Note.select()
+        self.assertEqual(len(notes), 0)

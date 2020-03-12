@@ -9,8 +9,8 @@ class TestCase(unittest.TestCase):
     MODELS = []
 
     def setUp(self):
-        # Bind model classes to test db. Since we have a complete list of
-        # all models, we do not need to recursively bind dependencies.
+        # Cambia la base de datos a una que se encuentra en memoria
+        # Solo funciona con la lista de modelos que se configura por TestCase
 
         test_db.bind(self.MODELS, bind_refs=False, bind_backrefs=False)
 
@@ -18,10 +18,6 @@ class TestCase(unittest.TestCase):
         test_db.create_tables(self.MODELS)
 
     def tearDown(self):
-        # Not strictly necessary since SQLite in-memory databases only live
-        # for the duration of the connection, and in the next step we close
-        # the connection...but a good practice all the same.
+        # Innecesario, pero buena practica
         test_db.drop_tables(self.MODELS)
-
-        # Close connection to db.
         test_db.close()

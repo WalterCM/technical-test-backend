@@ -1,6 +1,9 @@
 import os
+import datetime
+
 import hashlib
 import binascii
+
 import peewee
 
 from src import conf
@@ -9,6 +12,8 @@ db = peewee.SqliteDatabase('my_app.db')
 
 
 class BaseModel(peewee.Model):
+    created_at = peewee.DateTimeField(default=datetime.datetime.now)
+
     class Meta:
         database = db
 
@@ -64,3 +69,25 @@ class User(BaseModel):
         )
         password_hash = binascii.hexlify(password_hash).decode('ascii')
         return password_hash == self.password[64:]
+
+    def create_new_note(self):
+        return Note.create(title='', body='', user=self)
+
+
+class Note(BaseModel):
+    title = peewee.CharField()
+    body = peewee.TextField()
+    last_edited = peewee.DateTimeField()
+    user = peewee.ForeignKeyField(User, backref='notes')
+
+    def save(self, *args, **kwargs):
+        self.last_edited = datetime.datetime.now()
+        return super().save(*args, **kwargs)
+
+    def set_title(self, title):
+        self.title = title
+        self.save()
+
+    def set_body(self, body):
+        self.body = body
+        self.save()
