@@ -1,12 +1,18 @@
 import peewee
 
-from marshmallow import Schema, fields, pprint
-
-from src import conf
+from marshmallow import Schema, fields  # ValidationError
 
 
 class ModelSerializer:
+    serializer_field = {
+        'CharField': fields.Str,
+        'TextField': fields.Str,
+        'DateTimeField': fields.DateTime,
+        'AutoField': fields.Integer
+    }
+
     _validated = False
+    _fields = {}
     _errors = []
 
     class Meta:
@@ -56,16 +62,19 @@ class ModelSerializer:
         return instance
 
     def get_fields(self):
-        fields = self.Meta.fields
-        if fields == '__all__':
-            fields = []
+        field_names = self.Meta.fields
+        if field_names == '__all__':
+            field_names = []
             for possible_field_name in dir(self.Meta.model):
                 possible_field = getattr(self.Meta.model, possible_field_name)
                 if isinstance(possible_field, peewee.Field):
-                    fields.append(possible_field_name)
+                    self._fields[possible_field_name] = self.serializer_field[
+                        type(possible_field).__name__
+                    ]()
+                    field_names.append(possible_field_name)
 
-            fields = tuple(fields)
-        return fields
+            field_names = tuple(field_names)
+        return field_names
 
     def get_extra_kwargs(self):
         return self.Meta.extra_kwargs
@@ -132,30 +141,26 @@ class ModelSerializer:
 
         return self.instance
 
-    def serialize_datetime(self, attr):
-        if hasattr(conf, 'DATE_FORMAT'):
-            serialized = attr.strftime(conf.DATE_FORMAT)
-        else:
-            serialized = attr.isoformat()
-
-        return serialized
+    # def serialize_datetime(self, attr):
+    #     if hasattr(conf, 'DATE_FORMAT'):
+    #         serialized = attr.strftime(conf.DATE_FORMAT)
+    #     else:
+    #         serialized = attr.isoformat()
+    #
+    #     return serialized
 
     def to_representation(self, instance):
         ret = {}
         try:
             for field in self.get_fields():
                 attr = getattr(instance, field)
-                names = [type(attr).__name__, attr.__class__.__name__]
-                for name in names:
-                    method_name = 'serialize_{}'.format(name)
-                    if hasattr(self, method_name):
-                        attr = getattr(self, method_name)(attr)
-                        break
                 ret[field] = attr
         except ValueError as e:
             self._errors.append(e)
 
-        return ret
+        schema = Schema.from_dict(self._fields)()
+
+        return schema.dump(ret)
 
     @property
     def data(self):
@@ -170,8 +175,8 @@ class ListSerializer(ModelSerializer):
         if not type(data).__name__ == 'ModelSelect':
             raise ValueError('You need to pass a peewee queryset as instance')
 
-        thingy = []
+        ret = []
         for item in data:
-            i = super().to_representation(item)
-            thingy.append(i)
-        return thingy
+            serialized_element = super().to_representation(item)
+            ret.append(serialized_element)
+        return ret
