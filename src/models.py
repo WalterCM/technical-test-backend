@@ -8,7 +8,7 @@ import peewee
 
 from src import conf
 
-db = peewee.SqliteDatabase('my_app.db')
+db = peewee.SqliteDatabase('notes_app.db')
 
 
 class BaseModel(peewee.Model):
@@ -91,3 +91,13 @@ class Note(BaseModel):
     def set_body(self, body):
         self.body = body
         self.save()
+
+
+def initialize_db():
+    db.connect()
+    db.create_tables([User, Note], safe=True)
+    db.close()
+
+
+os.remove('notes_app.db')
+initialize_db()

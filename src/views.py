@@ -1,5 +1,6 @@
-from .utils.views import BaseAPIView
+from .utils import views
+from src import serializers
 
 
-class TestView(BaseAPIView):
-    pass
+class CreateUserView(views.CreateAPIView):
+    serializer_class = serializers.UserSerializer

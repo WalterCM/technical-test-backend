@@ -5,7 +5,7 @@ from . import views
 
 
 urlpatterns = [
-    path('users/create/', views.TestView, name='test')
+    path('users/create/', views.CreateUserView, name='users.create')
 ]
 
 
