@@ -1,9 +1,12 @@
-from bottle import route, run
+import bottle
+
+from .utils.routing import path
+from . import views
 
 
-@route('/hello')
-def hello():
-    return "Hello World!"
+urlpatterns = [
+    path('users/create/', views.TestView, name='test')
+]
 
 
-run(host='localhost', port=8000, debug=True)
+bottle.run(host='localhost', port=8000, debug=True)
