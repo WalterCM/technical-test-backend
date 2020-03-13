@@ -77,7 +77,24 @@ class ModelSerializer:
         return field_names
 
     def get_extra_kwargs(self):
-        return self.Meta.extra_kwargs
+        if hasattr(self.Meta, 'extra_kwargs'):
+            return self.Meta.extra_kwargs
+        return {}
+
+    def get_extra_kwargs_of(self, field):
+        extra_kwargs = self.get_extra_kwargs()
+        field_kwargs = {
+            'read_only': False,
+            'write_only': False,
+            'min_length': None,
+            'max_length': None
+        }
+        field_meta_kwargs = extra_kwargs.get(field)
+        if field_meta_kwargs:
+            for attr in field_meta_kwargs:
+                field_kwargs[attr] = field_meta_kwargs[attr]
+
+        return field_kwargs
 
     def get_validators(self):
         validators = {}
@@ -153,6 +170,10 @@ class ModelSerializer:
         ret = {}
         try:
             for field in self.get_fields():
+                extra_kwargs = self.get_extra_kwargs_of(field)
+                if extra_kwargs.get('write_only'):
+                    continue
+
                 attr = getattr(instance, field)
                 ret[field] = attr
         except ValueError as e:

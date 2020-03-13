@@ -44,6 +44,17 @@ class ModelSerializerTests(TestCase):
             self.payload.get('username')
         )
 
+    def test_write_only_fields(self):
+        """Testea que se puedan agregar extra_kwargs"""
+        self.TestUserSerializer.Meta.extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+        serializer = self.TestUserSerializer(self.user)
+
+        self.assertIn('username', serializer.data)
+        self.assertNotIn('password', serializer.data)
+
     def test_create_instance(self):
         """Testea que el serializer pueda crear un elemento"""
         payload = self.payload.copy()
