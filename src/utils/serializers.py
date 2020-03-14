@@ -78,7 +78,6 @@ class ModelSerializer:
             field_names = tuple(field_names)
 
         for field_name in field_names:
-            print(field_name)
             field = getattr(self.Meta.model, field_name)
             field_type = type(field).__name__
             marshmallow_type = self.serializer_field[field_type]()
@@ -192,10 +191,6 @@ class ModelSerializer:
         ret = {}
         try:
             for field in self.readable_fields:
-                extra_kwargs = self.get_extra_kwargs_of(field)
-                if extra_kwargs.get('write_only'):
-                    continue
-
                 attr = getattr(instance, field)
                 if isinstance(attr, peewee.Model):
                     attr = attr.id
