@@ -25,3 +25,25 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return models.User.objects.create_user(**validated_data)
+
+
+class NoteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.Note
+        fields = ('title', 'body', 'created_at', 'last_edited', 'user')
+        extra_kwargs = {
+            'created_at': {'read_only': True},
+            'last_edited': {'read_only': True},
+            'user': {'read_only': True}
+        }
+
+    def create(self, validated_data):
+        user = models.User.objects.create_user(
+            username='temp',
+            password='123456'
+        )
+
+        note = user.create_new_note(**validated_data)
+
+        return note

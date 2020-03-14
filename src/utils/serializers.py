@@ -8,11 +8,14 @@ class ModelSerializer:
         'CharField': fields.Str,
         'TextField': fields.Str,
         'DateTimeField': fields.DateTime,
-        'AutoField': fields.Integer
+        'AutoField': fields.Integer,
+        'ForeignKeyField': fields.Integer
     }
 
     _validated = False
     _fields = {}
+    _writable_fields = {}
+    _readable_fields = {}
     _errors = []
 
     class Meta:
@@ -28,6 +31,8 @@ class ModelSerializer:
         self.partial = kwargs.pop('partial', False)  # TODO: Usar, algun dia
         self._context = kwargs.pop('context', {})
         kwargs.pop('many', None)
+
+        self.setup_fields()
 
     def __new__(cls, *args, **kwargs):
         # Funcion copiadita de Django. Permite serializar una lista si se pasa
@@ -61,7 +66,7 @@ class ModelSerializer:
 
         return instance
 
-    def get_fields(self):
+    def setup_fields(self):
         field_names = self.Meta.fields
         if field_names == '__all__':
             field_names = []
@@ -73,11 +78,28 @@ class ModelSerializer:
             field_names = tuple(field_names)
 
         for field_name in field_names:
-            possible_field = getattr(self.Meta.model, field_name)
-            self._fields[field_name] = self.serializer_field[
-                type(possible_field).__name__
-            ]()
-        return field_names
+            print(field_name)
+            field = getattr(self.Meta.model, field_name)
+            field_type = type(field).__name__
+            marshmallow_type = self.serializer_field[field_type]()
+            self._fields[field_name] = marshmallow_type
+            extra_kwargs = self.get_extra_kwargs_of(field_name)
+            if not extra_kwargs.get('read_only'):
+                self._writable_fields[field_name] = marshmallow_type
+            if not extra_kwargs.get('write_only'):
+                self._readable_fields[field_name] = marshmallow_type
+
+    @property
+    def writable_fields(self):
+        return self._writable_fields
+
+    @property
+    def readable_fields(self):
+        return self._readable_fields
+
+    @property
+    def fields(self):
+        return self._fields
 
     def get_extra_kwargs(self):
         if hasattr(self.Meta, 'extra_kwargs'):
@@ -101,7 +123,7 @@ class ModelSerializer:
 
     def get_validators(self):
         validators = {}
-        for field in self.get_fields():
+        for field in self.writable_fields:
             validator_name = 'validate_{}'.format(field)
             if hasattr(self, validator_name):
                 validators[field] = (getattr(self, validator_name))
@@ -169,12 +191,14 @@ class ModelSerializer:
     def to_representation(self, instance):
         ret = {}
         try:
-            for field in self.get_fields():
+            for field in self.readable_fields:
                 extra_kwargs = self.get_extra_kwargs_of(field)
                 if extra_kwargs.get('write_only'):
                     continue
 
                 attr = getattr(instance, field)
+                if isinstance(attr, peewee.Model):
+                    attr = attr.id
                 ret[field] = attr
         except ValueError as e:
             self._errors.append(e)
@@ -191,7 +215,10 @@ class ModelSerializer:
     def errors(self):
         errors = []
         for error in self._errors:
-            errors += error.messages
+            if hasattr(error, 'messages'):
+                errors += error.messages
+            else:
+                errors.append(error)
 
         return errors
 

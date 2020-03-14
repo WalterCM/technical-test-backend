@@ -70,8 +70,8 @@ class User(BaseModel):
         password_hash = binascii.hexlify(password_hash).decode('ascii')
         return password_hash == self.password[64:]
 
-    def create_new_note(self):
-        return Note.create(title='', body='', user=self)
+    def create_new_note(self, title='', body=''):
+        return Note.create(title=title, body=body, user=self)
 
 
 class Note(BaseModel):
