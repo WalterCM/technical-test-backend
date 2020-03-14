@@ -37,11 +37,10 @@ class CreateAPIView(BaseAPIView):
 
     def post(self):
         serializer = self.get_serializer(data=dict(request.forms))
-        serializer.is_valid(raise_exception=True)
-
-        serializer.save()
-
-        return response(serializer.data, status=status.HTTP_201_CREATED)
+        if serializer.is_valid():
+            serializer.save()
+            return response(serializer.data, status=status.HTTP_201_CREATED)
+        return response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ListAPIView(BaseAPIView):

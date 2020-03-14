@@ -1,6 +1,6 @@
 import peewee
 
-from marshmallow import Schema, fields  # ValidationError
+from marshmallow import Schema, fields, ValidationError
 
 
 class ModelSerializer:
@@ -68,12 +68,15 @@ class ModelSerializer:
             for possible_field_name in dir(self.Meta.model):
                 possible_field = getattr(self.Meta.model, possible_field_name)
                 if isinstance(possible_field, peewee.Field):
-                    self._fields[possible_field_name] = self.serializer_field[
-                        type(possible_field).__name__
-                    ]()
                     field_names.append(possible_field_name)
 
             field_names = tuple(field_names)
+
+        for field_name in field_names:
+            possible_field = getattr(self.Meta.model, field_name)
+            self._fields[field_name] = self.serializer_field[
+                type(possible_field).__name__
+            ]()
         return field_names
 
     def get_extra_kwargs(self):
@@ -111,32 +114,29 @@ class ModelSerializer:
         if not hasattr(self, '_validated_data'):
             try:
                 self.run_validation(self.initial_data)
-            except ValueError as exc:
+            except Exception as exc:
                 self._validated_data = {}
                 self._errors.append(exc)
-            else:
-                self._errors = []
 
         if self._errors and raise_exception:
-            raise ValueError(self._errors)
+            raise ValidationError(self._errors)
 
         return not bool(self._errors)
 
     def run_validation(self, initial_data):
         validators = self.get_validators()
         for attr_name in initial_data:
-            if hasattr(validators, attr_name):
+            validator = validators.get(attr_name)
+            if validator:
                 try:
-                    validators[attr_name](initial_data[attr_name])
-                except ValueError as e:
+                    validator(initial_data[attr_name])
+                except Exception as e:
                     self._errors.append(e)
 
         try:
             self._validated_data = self.validate(initial_data)
-        except ValueError as e:
+        except Exception as e:
             self._errors.append(e)
-
-        return not bool(self._errors)
 
     def validate(self, attrs):
         return attrs
@@ -186,6 +186,14 @@ class ModelSerializer:
     @property
     def data(self):
         return self.to_representation(self.instance)
+
+    @property
+    def errors(self):
+        errors = []
+        for error in self._errors:
+            errors += error.messages
+
+        return errors
 
 
 class ListSerializer(ModelSerializer):
