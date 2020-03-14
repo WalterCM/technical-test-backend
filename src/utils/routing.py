@@ -11,10 +11,9 @@ def path(url=None, view=None, name=None):
     if not url.startswith('/'):
         url = urljoin('/', url)
 
-    for method in view.methods:
-        bottle.route(
-            path=url,
-            method=method,
-            callback=getattr(view(), method.lower()),
-            name=name
-        )
+    bottle.route(
+        path=url,
+        method=view.methods,
+        callback=view().callback,
+        name=name
+    )

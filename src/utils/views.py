@@ -8,6 +8,22 @@ class BaseAPIView:
     methods = []
     serializer_class = None
     queryset = None
+    permission_classes = ()
+    _permission_classes = []
+
+    def __init__(self):
+        for permission in self.permission_classes:
+            self._permission_classes.append(permission())
+
+    def callback(self):
+        for permission in self._permission_classes:
+            if not permission.has_permission():
+                return response(
+                    permission.errors,
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
+        return getattr(self, request.method.lower())()
 
     def get_queryset(self):
         assert self.queryset is not None, (
