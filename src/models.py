@@ -99,5 +99,9 @@ def initialize_db():
     db.close()
 
 
-os.remove('notes_app.db')
+try:
+    os.remove('notes_app.db')
+except FileNotFoundError:
+    pass
+
 initialize_db()
