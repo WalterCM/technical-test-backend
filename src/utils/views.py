@@ -17,7 +17,7 @@ class BaseAPIView:
 
     def callback(self):
         for permission in self._permission_classes:
-            if not permission.has_permission():
+            if not permission.check_permission():
                 return response(
                     permission.errors,
                     status=status.HTTP_401_UNAUTHORIZED

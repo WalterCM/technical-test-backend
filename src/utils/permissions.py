@@ -1,17 +1,34 @@
 import jwt
 
 from src.utils.authentication import jwt_token_from_header
-from src.utils.authentication import AuthorizationError
 from src.utils.authentication import jwtsecret
 
 
 class BasePermission:
     _errors = []
 
+    def check_permission(self):
+        try:
+            permission = self.has_permission()
+        except Exception as e:
+            self._errors.append(e)
+            permission = False
+
+        return permission
+
+    def check_object_permission(self, obj):
+        try:
+            permission = self.has_object_permission(obj)
+        except Exception as e:
+            self._errors.append(e)
+            permission = False
+
+        return permission
+
     def has_permission(self):
         return True
 
-    def has_object_permission(self):
+    def has_object_permission(self, obj):
         return True
 
     @property
@@ -28,18 +45,7 @@ class BasePermission:
 
 class IsAuthenticated(BasePermission):
     def has_permission(self):
-        token = None
-        try:
-            token = jwt_token_from_header()
-        except AuthorizationError as e:
-            self._errors.append(e)
-            return False
+        token = jwt_token_from_header()
+        jwt.decode(token, jwtsecret)
 
-        try:
-            jwt.decode(token, jwtsecret)  # throw away value
-        except jwt.ExpiredSignature:
-            self._errors.append('token is expired')
-            return False
-        except jwt.DecodeError as e:
-            self._errors.append(e)
-            return False
+        return True
