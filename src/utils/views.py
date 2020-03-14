@@ -36,7 +36,7 @@ class CreateAPIView(BaseAPIView):
     methods = ['POST']
 
     def post(self):
-        serializer = self.get_serializer(data=dict(request.forms))
+        serializer = self.get_serializer(data=request.json)
         if serializer.is_valid():
             serializer.save()
             return response(serializer.data, status=status.HTTP_201_CREATED)
