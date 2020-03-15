@@ -1,3 +1,7 @@
 MIN_PASSWORD_LENGTH = 6
 DATE_FORMAT = '%Y-%m-%d'
-SECRET = 'secret'
+JWT = {
+    'secret': 'secret',
+    'algorithm': 'HS256',
+    'expire_offset': 1800
+}

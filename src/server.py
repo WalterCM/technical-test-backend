@@ -5,6 +5,7 @@ from . import views
 
 
 urlpatterns = [
+    path('users/token/', views.UserTokenView, name='users.token'),
     path('users/create/', views.CreateUserView, name='users.create'),
     path('notes/create/', views.CreateNoteView, name='notes.create'),
     path('notes/list/', views.ListNotesView, name='notes.list')

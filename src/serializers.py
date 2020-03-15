@@ -1,7 +1,51 @@
-from marshmallow import ValidationError
+import jwt
+import time
 
+from marshmallow import ValidationError, fields, Schema
+
+from src import conf
 from src import models
 from src.utils import serializers
+
+
+class TokenSerializer(serializers.ModelSerializer):
+    username = fields.Str()
+    password = fields.Str()
+
+    def validate_password(self, password):
+        if len(password) < 6:
+            raise ValidationError('Password has a min length of 6 characters')
+
+    def validate(self, attrs):
+        username = attrs.get('username')
+        user = models.User.get(models.User.username == username)
+
+        password = attrs.get('password')
+        if not user.check_password(password):
+            raise ValidationError('Wrong password')
+
+        return attrs
+
+    def create(self, validated_data):
+        username = validated_data.pop('username', None)
+        user = models.User.get(models.User.username == username)
+
+        payload = {
+            'user': user.id,
+            'exp': time.time() + conf.JWT.get('expire_offset')
+        }
+
+        token = jwt.encode(
+            payload,
+            conf.JWT.get('secret'),
+            conf.JWT.get('algorithm')
+        )
+
+        return token
+
+    def to_representation(self, token):
+        schema = Schema.from_dict({'token': fields.Str()})()
+        return schema.dump({'token': token})
 
 
 class UserSerializer(serializers.ModelSerializer):

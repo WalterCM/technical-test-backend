@@ -8,11 +8,17 @@ class BaseAPIView:
     methods = []
     serializer_class = None
     queryset = None
-    permission_classes = ()
-    _permission_classes = []
+    permission_classes = None
+    _permission_classes = None
 
     def __init__(self):
+        if not self.permission_classes:
+            self.permission_classes = []
+
+        self._permission_classes = []
+        print('class_name: {}'.format(type(self).__name__))
         for permission in self.permission_classes:
+            print('permission: {}'.format(str(permission)))
             self._permission_classes.append(permission())
 
     def callback(self):

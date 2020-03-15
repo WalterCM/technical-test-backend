@@ -1,9 +1,5 @@
 from bottle import request
 
-from src import conf
-
-jwtsecret = conf.SECRET
-
 
 class AuthorizationError(Exception):
     pass
