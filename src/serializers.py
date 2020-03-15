@@ -96,11 +96,7 @@ class NoteSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        user = models.User.objects.create_user(
-            username='temp',
-            password='123456'
-        )
-
+        user = self.context.get('user')
         note = user.create_new_note(**validated_data)
 
         return note

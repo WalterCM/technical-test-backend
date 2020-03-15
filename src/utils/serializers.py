@@ -252,6 +252,10 @@ class ModelSerializer:
         return self.to_representation(self.instance)
 
     @property
+    def context(self):
+        return self._context
+
+    @property
     def errors(self):
         errors = []
         for error in self._errors:

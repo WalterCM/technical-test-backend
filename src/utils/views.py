@@ -18,6 +18,8 @@ class BaseAPIView:
     queryset = None
     permission_classes = None
 
+    user = None
+
     lookup_field = 'id'
 
     def __init__(self):
@@ -93,7 +95,13 @@ class BaseAPIView:
 
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
+        kwargs['context'] = self.get_serializer_context()
         return serializer_class(*args, **kwargs)
+
+    def get_serializer_context(self):
+        return {
+            'user': self.user
+        }
 
     def get_serializer_class(self):
         assert self.serializer_class is not None, (
