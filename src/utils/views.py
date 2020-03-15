@@ -16,9 +16,7 @@ class BaseAPIView:
             self.permission_classes = []
 
         self._permission_classes = []
-        print('class_name: {}'.format(type(self).__name__))
         for permission in self.permission_classes:
-            print('permission: {}'.format(str(permission)))
             self._permission_classes.append(permission())
 
     def callback(self):
