@@ -163,6 +163,7 @@ class ModelSerializer:
         fields = self._writable_fields
 
         ret = {}
+        errors = []
         for field_name in fields:
             validate_method = getattr(self, 'validate_' + field_name, None)
             primitive_value = data.get(field_name)
@@ -175,12 +176,12 @@ class ModelSerializer:
                 if validate_method is not None:
                     validated_value = validate_method(validated_value)
             except ValidationError as exc:
-                self._errors.append(exc)
+                errors.append(exc.messages)
             else:
                 ret[field_name] = validated_value
 
-        if self._errors:
-            raise ValidationError(self._errors)
+        if errors:
+            raise ValidationError(errors)
 
         return ret
 
