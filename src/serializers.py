@@ -63,9 +63,13 @@ class UserSerializer(serializers.ModelSerializer):
         ).exists():
             raise ValidationError('Username has to be unique')
 
+        return username
+
     def validate_password(self, password):
         if len(password) < 6:
             raise ValidationError('Password has a min length of 6 characters')
+
+        return password
 
     def create(self, validated_data):
         return models.User.objects.create_user(**validated_data)

@@ -179,6 +179,9 @@ class ModelSerializer:
             else:
                 ret[field_name] = validated_value
 
+        if self._errors:
+            raise ValidationError(self._errors)
+
         return ret
 
     def validate_primitive_value(self, field_name, value):
@@ -190,7 +193,7 @@ class ModelSerializer:
 
         marshmallow_conf = self._writable_fields[field_name]
         schema = Schema.from_dict({field_name: marshmallow_conf})()
-        validated_value = schema.load(value)[field_name]
+        validated_value = schema.load({field_name: value})[field_name]
 
         return validated_value
 
