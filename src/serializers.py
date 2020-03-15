@@ -77,6 +77,8 @@ class NoteSerializer(serializers.ModelSerializer):
         model = models.Note
         fields = ('title', 'body', 'created_at', 'last_edited', 'user')
         extra_kwargs = {
+            'title': {'required': False},
+            'body': {'required': False},
             'created_at': {'read_only': True},
             'last_edited': {'read_only': True},
             'user': {'read_only': True}

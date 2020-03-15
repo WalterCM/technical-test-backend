@@ -13,10 +13,9 @@ class ModelSerializer:
     }
 
     _validated = False
-    _fields = {}
-    _writable_fields = {}
-    _readable_fields = {}
-    _errors = []
+    _writable_fields = None
+    _readable_fields = None
+    _errors = None
 
     class Meta:
         model = None
@@ -33,6 +32,7 @@ class ModelSerializer:
         kwargs.pop('many', None)
 
         self.setup_fields()
+        self._errors = []
 
     def __new__(cls, *args, **kwargs):
         # Funcion copiadita de Django. Permite serializar una lista si se pasa
@@ -67,7 +67,10 @@ class ModelSerializer:
         return instance
 
     def setup_fields(self):
-        field_names = self.Meta.fields
+        self._writable_fields = {}
+        self._readable_fields = {}
+
+        field_names = self.Meta.fields or []
         if field_names == '__all__':
             field_names = []
             for possible_field_name in dir(self.Meta.model):
@@ -78,10 +81,23 @@ class ModelSerializer:
             field_names = tuple(field_names)
 
         for field_name in field_names:
-            field = getattr(self.Meta.model, field_name)
-            field_type = type(field).__name__
-            marshmallow_type = self.serializer_field[field_type]()
-            self._fields[field_name] = marshmallow_type
+            marshmallow_type = None
+            if hasattr(self.Meta, 'model'):
+                field = getattr(self.Meta.model, field_name)
+                field_type = type(field).__name__
+                marshmallow_type = self.serializer_field[field_type]()
+
+            if hasattr(self, field_name):
+                marshmallow_type = getattr(self, field_name)
+
+            if not marshmallow_type:
+                self._errors.append(
+                    '{} needs a marshmallow field configured'.format(
+                        field_name
+                    )
+                )
+                return
+
             extra_kwargs = self.get_extra_kwargs_of(field_name)
             if not extra_kwargs.get('read_only'):
                 self._writable_fields[field_name] = marshmallow_type
@@ -96,10 +112,6 @@ class ModelSerializer:
     def readable_fields(self):
         return self._readable_fields
 
-    @property
-    def fields(self):
-        return self._fields
-
     def get_extra_kwargs(self):
         if hasattr(self.Meta, 'extra_kwargs'):
             return self.Meta.extra_kwargs
@@ -111,7 +123,8 @@ class ModelSerializer:
             'read_only': False,
             'write_only': False,
             'min_length': None,
-            'max_length': None
+            'max_length': None,
+            'required': True
         }
         field_meta_kwargs = extra_kwargs.get(field)
         if field_meta_kwargs:
@@ -120,21 +133,12 @@ class ModelSerializer:
 
         return field_kwargs
 
-    def get_validators(self):
-        validators = {}
-        for field in self.writable_fields:
-            validator_name = 'validate_{}'.format(field)
-            if hasattr(self, validator_name):
-                validators[field] = (getattr(self, validator_name))
-
-        return validators
-
     def is_valid(self, raise_exception=False):
         self._validated = True
 
         if not hasattr(self, '_validated_data'):
             try:
-                self.run_validation(self.initial_data)
+                self._validated_data = self.run_validation(self.initial_data)
             except Exception as exc:
                 self._validated_data = {}
                 self._errors.append(exc)
@@ -144,20 +148,51 @@ class ModelSerializer:
 
         return not bool(self._errors)
 
-    def run_validation(self, initial_data):
-        validators = self.get_validators()
-        for attr_name in initial_data:
-            validator = validators.get(attr_name)
-            if validator:
-                try:
-                    validator(initial_data[attr_name])
-                except Exception as e:
-                    self._errors.append(e)
+    def run_validation(self, data):
+        data = self.to_internal_value(data)
 
+        validated_data = None
         try:
-            self._validated_data = self.validate(initial_data)
+            validated_data = self.validate(data)
         except Exception as e:
             self._errors.append(e)
+
+        return validated_data
+
+    def to_internal_value(self, data):
+        fields = self._writable_fields
+
+        ret = {}
+        for field_name in fields:
+            validate_method = getattr(self, 'validate_' + field_name, None)
+            primitive_value = data.get(field_name)
+
+            try:
+                validated_value = self.validate_primitive_value(
+                    field_name,
+                    primitive_value
+                )
+                if validate_method is not None:
+                    validated_value = validate_method(validated_value)
+            except ValidationError as exc:
+                self._errors.append(exc)
+            else:
+                ret[field_name] = validated_value
+
+        return ret
+
+    def validate_primitive_value(self, field_name, value):
+        extra_kwargs = self.get_extra_kwargs_of(field_name)
+        required = extra_kwargs.get('required')
+
+        if required and value is None:
+            raise ValidationError('{} is required'.format(field_name))
+
+        marshmallow_conf = self._writable_fields[field_name]
+        schema = Schema.from_dict({field_name: marshmallow_conf})()
+        validated_value = schema.load(value)[field_name]
+
+        return validated_value
 
     def validate(self, attrs):
         return attrs
@@ -198,7 +233,7 @@ class ModelSerializer:
         except ValueError as e:
             self._errors.append(e)
 
-        schema = Schema.from_dict(self._fields)()
+        schema = Schema.from_dict(self.readable_fields)()
 
         return schema.dump(ret)
 
