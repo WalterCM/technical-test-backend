@@ -12,13 +12,20 @@ class TokenSerializer(serializers.ModelSerializer):
     username = fields.Str()
     password = fields.Str()
 
+    class Meta:
+        fields = ('username', 'password')
+
     def validate_password(self, password):
         if len(password) < 6:
             raise ValidationError('Password has a min length of 6 characters')
 
+        return password
+
     def validate(self, attrs):
         username = attrs.get('username')
-        user = models.User.get(models.User.username == username)
+        user = models.User.get_or_none(models.User.username == username)
+        if not user:
+            raise ValidationError('User with that username does not exist')
 
         password = attrs.get('password')
         if not user.check_password(password):

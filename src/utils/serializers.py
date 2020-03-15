@@ -175,6 +175,12 @@ class ModelSerializer:
                 )
                 if validate_method is not None:
                     validated_value = validate_method(validated_value)
+                    if validated_value is None:
+                        errors.append(
+                            'validate_{} should return a value'.format(
+                                field_name
+                            )
+                        )
             except ValidationError as exc:
                 errors.append(exc.messages)
             else:

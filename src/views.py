@@ -16,6 +16,7 @@ class CreateUserView(views.CreateAPIView):
 
 class CreateNoteView(views.CreateAPIView):
     serializer_class = serializers.NoteSerializer
+    permission_classes = (permissions.IsAuthenticated,)
 
 
 class ListNotesView(views.ListAPIView):
