@@ -50,6 +50,10 @@ class AllowAny(BasePermission):
 class IsAuthenticated(BasePermission):
     def has_permission(self):
         token = jwt_token_from_header()
-        jwt.decode(token, conf.JWT.get('secret'))
+        jwt.decode(
+            token,
+            conf.JWT.get('secret'),
+            algorithms=conf.JWT.get('algorithm')
+        )
 
         return True
