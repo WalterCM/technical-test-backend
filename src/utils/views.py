@@ -1,33 +1,86 @@
 from bottle import request
 
 from src.utils import status
+from src.utils import permissions
 from src.utils.response import response
 
 
+class PermissionException(Exception):
+    pass
+
+
 class BaseAPIView:
-    methods = []
+    args = None
+    kwargs = None
+
+    methods = None
     serializer_class = None
     queryset = None
     permission_classes = None
-    _permission_classes = None
+
+    lookup_field = 'id'
 
     def __init__(self):
         if not self.permission_classes:
-            self.permission_classes = []
+            self.permission_classes = [permissions.AllowAny]
 
-        self._permission_classes = []
-        for permission in self.permission_classes:
-            self._permission_classes.append(permission())
+    def permission_denied(self, message,
+                          status_code=status.HTTP_403_FORBIDDEN):
+        response(
+            message,
+            status=status_code
+        )
+        raise PermissionException
 
-    def callback(self):
-        for permission in self._permission_classes:
-            if not permission.check_permission():
-                return response(
+    def get_permissions(self):
+        return [permission() for permission in self.permission_classes]
+
+    def check_permissions(self):
+        for permission in self.get_permissions():
+            if not permission.has_permission(self):
+                self.permission_denied(
                     permission.errors,
-                    status=status.HTTP_401_UNAUTHORIZED
+                    status.HTTP_401_UNAUTHORIZED
                 )
 
-        return getattr(self, request.method.lower())()
+    def check_object_permissions(self, obj):
+        for permission in self.get_permissions():
+            if not permission.has_object_permission(self, obj):
+                self.permission_denied(permission.errors)
+
+    def callback(self, *args, **kwargs):
+        try:
+            self.check_permissions()
+        except PermissionException:
+            return
+
+        self.args = args
+        self.kwargs = kwargs
+
+        try:
+            res = getattr(self, request.method.lower())(*args, **kwargs)
+            return res
+        except PermissionException:
+            pass
+
+    def get_object(self):
+        queryset = self.get_queryset()
+
+        assert self.lookup_field in self.kwargs,  (
+            'Expected view %s to be called with a URL keyword argument '
+            'named "%s". Fix your URL conf, or set the `.lookup_field` '
+            'attribute on the view correctly.' %
+            (self.__class__.__name__, self.lookup_field)
+        )
+
+        lookup_value = self.kwargs.get(self.lookup_field)
+        obj = queryset.get_or_none(
+            getattr(queryset.model, self.lookup_field) == lookup_value
+        )
+
+        self.check_object_permissions(obj)
+
+        return obj
 
     def get_queryset(self):
         assert self.queryset is not None, (
@@ -61,6 +114,33 @@ class CreateAPIView(BaseAPIView):
             serializer.save()
             return response(serializer.data, status=status.HTTP_201_CREATED)
         return response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RetrieveUpdateAPIView(BaseAPIView):
+    methods = ['GET', 'PUT', 'PATCH']
+
+    def get(self, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+
+        return response(serializer.data)
+
+    def put(self, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance,
+            data=request.json,
+            partial=partial
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return response(serializer.data, status=status.HTTP_201_CREATED)
+        return response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, *args, **kwargs):
+        kwargs['partial'] = True
+        self.put(*args, **kwargs)
 
 
 class ListAPIView(BaseAPIView):

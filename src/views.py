@@ -23,3 +23,8 @@ class ListNotesView(views.ListAPIView):
     serializer_class = serializers.NoteSerializer
     permission_classes = (permissions.IsAuthenticated,)
     queryset = models.Note.select()
+
+
+class ManageNoteView(views.RetrieveUpdateAPIView):
+    serializer_class = serializers.NoteSerializer
+    permissions = (permissions.IsAuthenticated,)
