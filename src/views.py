@@ -1,6 +1,7 @@
 from .utils import views
 from src import serializers
 
+from src import models
 from src.utils import permissions
 
 
@@ -23,7 +24,7 @@ class ManageNoteView(views.RetrieveUpdateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return self.user.notes
+        return self.user.notes.order_by(models.Note.created_at.desc())
 
 
 class ListNotesView(views.ListAPIView):
@@ -31,4 +32,4 @@ class ListNotesView(views.ListAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return self.user.notes
+        return self.user.notes.order_by(models.Note.created_at.desc())
