@@ -24,8 +24,7 @@ class ModelSerializer:
 
     def __init__(self, instance=None, data=None, **kwargs):
         self.instance = instance
-        if data:
-            self.initial_data = data
+        self.initial_data = data
 
         self.partial = kwargs.pop('partial', False)  # TODO: Usar, algun dia
         self._context = kwargs.pop('context', {})
@@ -195,8 +194,11 @@ class ModelSerializer:
         extra_kwargs = self.get_extra_kwargs_of(field_name)
         required = extra_kwargs.get('required')
 
-        if required and value is None:
-            raise ValidationError('{} is required'.format(field_name))
+        if value is None:
+            if required:
+                raise ValidationError('{} is required'.format(field_name))
+            else:
+                return
 
         marshmallow_conf = self._writable_fields[field_name]
         schema = Schema.from_dict({field_name: marshmallow_conf})()
