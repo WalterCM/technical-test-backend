@@ -13,7 +13,7 @@ class ModelSerializerTests(TestCase):
     class TestUserSerializer(serializers.ModelSerializer):
         class Meta:
             model = models.User
-            fields = '__all__'
+            fields = ('username', 'password')
 
     def setUp(self):
         super().setUp()
@@ -21,7 +21,7 @@ class ModelSerializerTests(TestCase):
 
     def test_get_all_fields(self):
         serializer = self.TestUserSerializer(self.user)
-        fields = serializer.get_fields()
+        fields = serializer.readable_fields
 
         self.assertIn('username', fields)
         self.assertIn('password', fields)
@@ -30,7 +30,7 @@ class ModelSerializerTests(TestCase):
         self.TestUserSerializer.Meta.fields = ('username',)
 
         serializer = self.TestUserSerializer(self.user)
-        fields = serializer.get_fields()
+        fields = serializer.readable_fields
 
         self.assertIn('username', fields)
         self.assertNotIn('password', fields)
