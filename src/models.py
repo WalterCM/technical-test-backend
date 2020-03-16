@@ -91,17 +91,3 @@ class Note(BaseModel):
     def set_body(self, body):
         self.body = body
         self.save()
-
-
-def initialize_db():
-    db.connect()
-    db.create_tables([User, Note], safe=True)
-    db.close()
-
-
-try:
-    os.remove('notes_app.db')
-except FileNotFoundError:
-    pass
-
-initialize_db()

@@ -1,8 +1,9 @@
+import os
 import bottle
 
-from .utils.routing import path
-from . import views
-
+from src import models
+from src import views
+from src.utils.routing import path
 
 urlpatterns = [
     path('users/token/', views.UserTokenView, name='users.token'),
@@ -12,5 +13,19 @@ urlpatterns = [
     path('notes/list/', views.ListNotesView, name='notes.list')
 ]
 
+
+def initialize_db():
+    db = models.db
+    db.connect()
+    db.create_tables([models.User, models.Note], safe=True)
+    db.close()
+
+
+try:
+    os.remove('notes_app.db')
+except FileNotFoundError:
+    pass
+
+initialize_db()
 
 bottle.run(host='localhost', port=8000, debug=True)
