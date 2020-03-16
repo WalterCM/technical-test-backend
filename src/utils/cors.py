@@ -14,8 +14,9 @@ class EnableCors(object):
             headers = 'Access-Control-Allow-Headers'
             response.headers[origin] = '*'
             response.headers[methods] = 'GET, POST, PUT, PATCH, OPTIONS'
-            response.headers[headers] = 'Origin, Accept, Content-Type,' \
-                                        ' X-Requested-With, X-CSRF-Token'
+            response.headers[headers] = 'Authorization, Origin, Accept, ' \
+                                        'Content-Type, X-Requested-With, ' \
+                                        'X-CSRF-Token'
 
             if bottle.request.method != 'OPTIONS':
                 # actual request; reply with the actual response
