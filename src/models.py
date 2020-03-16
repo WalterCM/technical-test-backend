@@ -81,6 +81,10 @@ class Note(BaseModel):
     user = peewee.ForeignKeyField(User, backref='notes')
 
     def save(self, *args, **kwargs):
+        if self.title is None:
+            self.title = ''
+        if self.body is None:
+            self.body = ''
         self.last_edited = datetime.datetime.now()
         return super().save(*args, **kwargs)
 
