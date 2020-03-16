@@ -76,7 +76,7 @@ class BaseAPIView:
         )
 
         lookup_value = self.kwargs.get(self.lookup_field)
-        obj = queryset.get_or_none(
+        obj = queryset.model.get_or_none(
             getattr(queryset.model, self.lookup_field) == lookup_value
         )
 
@@ -143,7 +143,7 @@ class RetrieveUpdateAPIView(BaseAPIView):
         )
         if serializer.is_valid():
             serializer.save()
-            return response(serializer.data, status=status.HTTP_201_CREATED)
+            return response(serializer.data)
         return response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, *args, **kwargs):
