@@ -154,7 +154,7 @@ class RetrieveUpdateAPIView(BaseAPIView):
 class ListAPIView(BaseAPIView):
     methods = ['GET']
 
-    def get(self):
+    def get(self, *args, **kwargs):
         queryset = self.get_queryset()
 
         serializer = self.get_serializer(queryset, many=True)

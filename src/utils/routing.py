@@ -13,7 +13,7 @@ def path(url=None, view=None, name=None):
 
     bottle.route(
         path=url,
-        method=view.methods,
+        method=view.methods + ['OPTIONS'],
         callback=view().callback,
         name=name
     )
