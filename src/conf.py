@@ -3,5 +3,5 @@ DATE_FORMAT = '%Y-%m-%d'
 JWT = {
     'secret': 'secret',
     'algorithm': 'HS256',
-    'expire_offset': 1800
+    'expire_offset': 7200
 }
