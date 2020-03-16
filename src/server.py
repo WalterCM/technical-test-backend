@@ -2,16 +2,10 @@ import os
 import bottle
 
 from src import models
-from src import views
-from src.utils.routing import path
 
-urlpatterns = [
-    path('users/token/', views.UserTokenView, name='users.token'),
-    path('users/create/', views.CreateUserView, name='users.create'),
-    path('notes/create/', views.CreateNoteView, name='notes.create'),
-    path('notes/<id:int>/manage/', views.ManageNoteView, name='notes.manage'),
-    path('notes/list/', views.ListNotesView, name='notes.list')
-]
+# El siguiente import no se usa explicitamente.
+# Solo es colocado aqui para el routing
+import src.urls
 
 
 def initialize_db():
@@ -27,5 +21,24 @@ except FileNotFoundError:
     pass
 
 initialize_db()
+
+
+@bottle.route('/<:re:.*>', method='OPTIONS')
+def enable_cors_generic_route():
+    add_cors_headers()
+
+
+@bottle.hook('after_request')
+def enable_cors_after_request_hook():
+    add_cors_headers()
+
+
+def add_cors_headers():
+    bottle.response.headers['Access-Control-Allow-Origin'] = '*'
+    bottle.response.headers['Access-Control-Allow-Methods'] = \
+        'GET, POST, PUT, OPTIONS'
+    bottle.response.headers['Access-Control-Allow-Headers'] = \
+        'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
+
 
 bottle.run(host='localhost', port=8000, debug=True)
